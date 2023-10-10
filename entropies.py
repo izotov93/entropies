@@ -12,6 +12,7 @@ import antropy as ant
 import EntropyHub as EH
 from NNetEn import NNetEn_entropy
 from datetime import datetime
+from tqdm import tqdm
 
 config_entropy = {
     'svd_order': 9,
@@ -34,7 +35,7 @@ config_entropy = {
     'nneten_mu': 1,
     'nneten_method': 3,
     'nneten_metric': 'Acc',
-    'nneten_epoch': 20
+    'nneten_epoch': 5
 }
 
 base_config = {
@@ -63,47 +64,49 @@ def read_file_time_series(input_file: str) -> list:
 
 def calculate_entropy(params: int, data: list, config: dict) -> list:
     result = []
+    progress_bar_params = {'ascii': True, 'desc': 'Series', 'ncols':60,
+                           'bar_format': "{desc} :{percentage:3.0f}% |{bar}| {n_fmt}/{total_fmt}"}
     if params == 1:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             result.append(ant.svd_entropy(series, order=config['svd_order'],
                                           delay=config['svd_delay'], normalize=True))
     elif params == 2:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             result.append(ant.perm_entropy(series, order=config['perm_order'],
                                            delay=config['perm_delay'], normalize=True))
     elif params == 3:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             app_ent, _ = EH.ApEn(series, m=config['app_dim'],
                                  r=config['app_r'] * np.std(series, ddof=0))
             result.append(app_ent[-1])
     elif params == 4:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             samp_ent, _, _ = EH.SampEn(series, m=config['sampl_dim'],
                                        r=config['sampl_r'] * np.std(series, ddof=0))
             result.append(samp_ent[-1])
     elif params == 5:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             bubb, renyi = EH.BubbEn(series, m=config['bub_dim'])
             result.append(bubb[-1])
     elif params == 6:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             CoSiEn, _ = EH.CoSiEn(series, m=config['cosi_dim'], r=config['cosi_r'])
             result.append(CoSiEn)
     elif params == 7:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             DistEn, _ = EH.DistEn(series, m=config['dist_dim'], Bins='sqrt')
             result.append(DistEn)
     elif params == 8:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             FuzzEn, _, _ = EH.FuzzEn(series, m=config['fuzz_dim'],
                                      r=(config['fuzz_r1'] * np.std(series), config['fuzz_r2']))
             result.append(FuzzEn[-1])
     elif params == 9:
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             result.append(EH.PhasEn(series, K=config['phase_k']))
     elif params == 10:
         NNetEn = NNetEn_entropy(database=config['nneten_ds'], mu=config['nneten_mu'])
-        for series in data:
+        for series in tqdm(data, **progress_bar_params):
             result.append(NNetEn.calculation(series, epoch=config['nneten_epoch'],
                                              method=config['nneten_method'],
                                              metric=config['nneten_metric'], log=False))
